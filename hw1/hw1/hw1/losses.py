@@ -93,7 +93,15 @@ class SVMHingeLoss(ClassifierLoss):
 
         grad = None
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        N = self.grad_ctx['x'].size(0)
+        # Create a binary mask indicating which margins are greater than 0
+        binary_mask = (self.grad_ctx['margins'] > 0).float()
+        # Count the number of positive margins for each sample
+        num_positive_margins = binary_mask.sum(dim=1, keepdim=True)
+        # Subtract 1 from the binary mask for the correct class
+        binary_mask[torch.arange(N), self.grad_ctx['y']] -= num_positive_margins.squeeze()
+        # Multiply the binary mask by the input samples to get the gradient
+        grad = torch.mm(self.grad_ctx['x'].t(), binary_mask) / N
         # ========================
 
         return grad
